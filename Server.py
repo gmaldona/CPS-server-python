@@ -81,8 +81,8 @@ class Server:
         for device in self.devices:
             message = "SCAN;{};{};{}".format(device['address'], device['manufacturer_data'], device['localname'])
             print(message.encode("ascii", "ignore"))
-            for _ in range(0, 20):
-                self.connection.send("{}\n".format(message).encode())
+            self.connection.send("{}\n".format(message).encode())
+            time.sleep(0.2)
             
             
         print("---=== SCANNING COMPLETE ===---")
