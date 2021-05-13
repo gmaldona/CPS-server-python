@@ -28,7 +28,7 @@ class Server:
     def listen(self):
         command = ''
         running = True
-        while running and self.connection.is_running():
+        while running and self.connection.fileno() != -1:
             data = self.connection.recv(1024)
             if not data:
                 print("No data received")
