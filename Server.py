@@ -5,11 +5,10 @@ import json
 from bleak import BleakClient
 import time
 
-commands = []
-
 class Server:
 
     devices = []
+    commands = []
     
     def __init__(self, host='127.0.0.1', port=6000):
         self._HOST = host
@@ -22,64 +21,33 @@ class Server:
             s.bind((self._HOST, self._PORT))
             s.listen()
             self.connection, _ = s.accept()
-            with self.connection:
-                print("Server Started")
-                self.listen()
-                s.close()                   
+            with self.connection: 
+                print("Server Started")    
+                self.listen()                  
                      
     def listen(self):
-        global commands
+        command = ''
         running = True
-        while running:
-            with self.connection:
-                data = self.connection.recv(1024)
-                if not data:
-                    break
-                else:
-                    data = data.decode('utf-8')
-                    for command in data.split(';'):
-                        commands.append(command)
-                    if len(commands) > 0:
-                        command = commands.pop(0)
-
-                        if command == 'SCAN':
-                            self.scan()
-                        elif command == 'CONNECT':
-                            self.connect()
-                        elif command == 'DISCONNECT':
-                            return
-                        else:
-                            return
-            
-    # def listen(self):
-    #     global commands
-    #     isConnected = True
-    #     while isConnected:
-    #         with self.connection:
-    #             data = self.connection.recv(1024)
-    #             if not data: 
-    #                 break
-    # #             else: 
-    # #                 data = data.decode('utf-8')
+        while running and self.connection.is_running():
+            data = self.connection.recv(1024)
+            if not data:
+                print("No data received")
+                break
+            else:
+                data = data.decode('utf-8')
+                for c in data.split(';'):
+                    self.commands.append(c)
+                if len(self.commands) > 0:
                     
-    
-    # def act(self):
-    #     global commands
-    #     isConnected = True
-    #     while isConnected: 
-    #         with self.connection:
-    #             if len(commands) > 0:
-    #                 command = commands.pop(0)
-
-    #                 if command == 'SCAN':
-    #                     self.scan()
-    #                 elif command == 'CONNECT':
-    #                     self.connect()
-    #                 elif command == 'DISCONNECT':
-    #                     return
-    #                 else:
-    #                     return
-            
+                    command = self.commands.pop(0)
+                    if command == 'SCAN\n':
+                        self.scan() 
+                    elif command == 'CONNECT\n':
+                        self.connect()
+                    elif command == 'DISCONNECT\n':
+                        return
+                    else: 
+                        return
     
     def scan(self):
         print('---=== SCANNING FOR VEHICLES...  ===---')
@@ -96,7 +64,7 @@ class Server:
                     hex_value = hex(int(hex_value, 16))
                     byte_array = bytearray.fromhex(hex_value[2:])
                     hex_value = bytearray.hex(byte_array)
-                    print(hex_value)
+                    print("Hex {}".format(hex_value))
                     address = ''
                     for addr in device.address.split('-'):
                         address = address + addr
@@ -114,7 +82,6 @@ class Server:
             self.connection.send(message.encode())
     
     def connect(self) -> bool:
-        global commands
         print('---=== CONNECTING TO VEHICLES... ===---')
         if len(commands) != 2:
             self.connection.send("CONNECT;ERROR\n")
