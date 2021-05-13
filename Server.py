@@ -42,6 +42,8 @@ class Server:
                     command = self.commands.pop(0)
                     if command == 'SCAN\n':
                         self.scan() 
+                        time.sleep(1)
+                        self.connection.send("SCAN;COMPLETED\n".encode())
                     elif command == 'CONNECT\n':
                         self.connect()
                     elif command == 'DISCONNECT\n':
@@ -77,9 +79,13 @@ class Server:
         loop.run_until_complete(discover())
         
         for device in self.devices:
-            message = "SCAN;{};{};{}\n".format(device['address'], device['manufacturer_data'], device['localname'])
+            message = "SCAN;{};{};{}".format(device['address'], device['manufacturer_data'], device['localname'])
             print(message.encode("ascii", "ignore"))
-            self.connection.send(message.encode())
+            for _ in range(0, 20):
+                self.connection.send("{}\n".format(message).encode())
+            
+            
+        print("---=== SCANNING COMPLETE ===---")
     
     def connect(self) -> bool:
         print('---=== CONNECTING TO VEHICLES... ===---')
